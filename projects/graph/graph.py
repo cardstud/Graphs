@@ -1,80 +1,156 @@
 """
 Simple graph implementation
 """
-from util import Stack, Queue  # These may come in handy
+
+from collections import deque
 
 class Graph:
 
-    """Represent a graph as a dictionary of vertices mapping labels to edges."""
     def __init__(self):
-        self.vertices = {}
+        # vertex_id --> set of neighbors
+        self.vertices = {}      # start off with an empty dictionary (will contain keys/values)
+
+    def __repr__(self):
+        return str(self.vertices)
 
     def add_vertex(self, vertex_id):
-        """
-        Add a vertex to the graph.
-        """
-        pass  # TODO
+        self.vertices[vertex_id] = set()       # empty set to hold the vertexes
 
-    def add_edge(self, v1, v2):
-        """
-        Add a directed edge to the graph.
-        """
-        pass  # TODO
+    # remove vertex from graph and any incoming edges to it
+    def remove_vertex(self,vertex_id):
+        # check if exists
+        if vertex_id not in self.vertices:
+            print("Attempting to remove non-existant vertex")
+            return
+        
+        self.vertices.pop(vertex_id)
+        
+        # remove the edge
+        for remaining_vertex in self.vertices:
+            self.vertices[remaining_vertex].discard(vertex_id)
 
+    def remove_edge(self, from_vertex_id, to_vertex_id):
+        # check that edges of the vertex exist
+        if from_vertex_id not in self.vertices or to_vertex_id not in self.vertices:
+            print("Attempting to remove edges from non-existant vertex")
+            return
+
+        self.vertices[from_vertex_id].discard(to_vertex_id)
+
+    # adds a directed edge from_vertex_id to to_vertex_id
+    def add_edge(self, from_vertex_id, to_vertex_id):
+        # check if vertex_id is in dictionary
+        if from_vertex_id not in self.vertices or to_vertex_id not in self.vertices:
+            print("Attempting to add edge to non-existing nodes")
+            return 
+        
+        # this line makes it a directed edge
+        self.vertices[from_vertex_id].add(to_vertex_id)     # add onto the set
+
+        # # to make it undirected
+        # self.vertices[from_vertex_id].add(to_vertex_id)
+        # self.vertices[to_vertex_id].add(from_vertex_id)
+
+    # will return all the outgoing edges from vertex_id - if no neighbors, returns none
     def get_neighbors(self, vertex_id):
-        """
-        Get all neighbors (edges) of a vertex.
-        """
-        pass  # TODO
+        return self.vertices[vertex_id]     # just do a dictionary lookup to get those values
 
-    def bft(self, starting_vertex):
-        """
-        Print each vertex in breadth-first order
-        beginning from starting_vertex.
-        """
-        pass  # TODO
-
+    # based on the pseudocode up above
+    # df traversal - traverse entire list
     def dft(self, starting_vertex):
-        """
-        Print each vertex in depth-first order
-        beginning from starting_vertex.
-        """
-        pass  # TODO
+        visited = set()
+        stack = deque()
+        stack.append(starting_vertex)
 
+        while len(stack) > 0:
+            currNode = stack.pop()
+            if currNode not in visited:
+                visited.add(currNode)
+                print(currNode)
+
+                for neighbor in self.vertices[currNode]:
+                    stack.append(neighbor)
+
+    # df search (you stop when its found)
+    # returns a path to the goal_vertex from starting_vertex
+    def dfs(self, starting_vertex, goal_vertex):
+        visited = set()
+        stack = deque()
+
+        # push the current path onto the stack, instead of just a single vertex
+        stack.append([starting_vertex])
+
+        while len(stack) > 0:
+            currPath = stack.pop()
+            currNode = currPath[-1]     # the current node you're on is the last node in the path
+
+            if currNode == goal_vertex:
+                return currPath
+    
+            if currNode not in visited:
+                visited.add(currNode)
+
+                for neighbor in self.vertices[currNode]:
+                    newPath = list(currPath)    # make a copy of the current path
+                    newPath.append(neighbor)
+                    stack.append(newPath)
+
+    # bf traversal given a starting vertex
+    def bft(self, starting_vertex):
+        visited = set()
+        queue = deque()
+        queue.append(starting_vertex)
+
+        while len(queue) > 0:
+            currNode = queue.popleft()  # since queue is FIFO
+            if currNode not in visited:
+                visited.add(currNode)
+                print(currNode)
+                for neighbor in self.vertices[currNode]:
+                    queue.append(neighbor)
+
+    def bfs(self, starting_vertex, goal_vertex):
+        pass
+
+    # Basecases: already visited that neighbor or have no new neighbors
+    # will use a helper function with below
     def dft_recursive(self, starting_vertex):
-        """
-        Print each vertex in depth-first order
-        beginning from starting_vertex.
+        visited = set()
+        self.dft_recursive_helper(starting_vertex, visited)
 
-        This should be done using recursion.
-        """
-        pass  # TODO
+    # dft recursive helper function
+    def dft_recursive_helper(self, curr_vertex, visited):
+        visited.add(curr_vertex)
+        print(curr_vertex)
+        for neighbor in self.vertices[curr_vertex]:
+            if neighbor not in visited:
+                # recursive case
+                self.dft_recursive_helper(neighbor, visited)
 
-    def bfs(self, starting_vertex, destination_vertex):
-        """
-        Return a list containing the shortest path from
-        starting_vertex to destination_vertex in
-        breath-first order.
-        """
-        pass  # TODO
+    def dfs_recursive(self, starting_vertex, goal_vertex):
+        visited = set()
+        return self.dfs_recursive_helper([starting_vertex], visited, goal_vertex)
 
-    def dfs(self, starting_vertex, destination_vertex):
-        """
-        Return a list containing a path from
-        starting_vertex to destination_vertex in
-        depth-first order.
-        """
-        pass  # TODO
+    # return the path to goal_vertex if it exists, if it doesn't, return an empty array
+    def dfs_recursive_helper(self, curr_path, visited, goal_vertex):
+        curr_vertex = curr_path[-1]
 
-    def dfs_recursive(self, starting_vertex, destination_vertex):
-        """
-        Return a list containing a path from
-        starting_vertex to destination_vertex in
-        depth-first order.
+        # one of our base cases - if curr vertex is goal vertex, return its path
+        if curr_vertex == goal_vertex:
+            return curr_path
+        visited.add(curr_vertex)
+        for neighbor in self.vertices[curr_vertex]:
+            if neighbor not in visited:
+                newPath = list(curr_path)
+                newPath.append(neighbor)
 
-        This should be done using recursion.
-        """
-        pass  # TODO
+                # recursive case - keep traversing the graph and visit the neighbor next
+                res = self.dfs_recursive_helper(newPath, visited, goal_vertex)
+                if len(res) > 0:
+                    return res
+
+        # base case - return empty array if goal vertex is not found
+        return []
 
 if __name__ == '__main__':
     graph = Graph()  # Instantiate your graph
